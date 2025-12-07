@@ -9,6 +9,9 @@
 
 #define pi ALLEGRO_PI
 
+#define GRID_WIDTH  10
+#define GRID_HEIGHT 10
+
 typedef struct {
    float x, y, z;
 } Vec3;
@@ -60,6 +63,7 @@ double movement_speed = 0.05;
 int mouse_dx, mouse_dy;
 
 ALLEGRO_VERTEX *vertices;
+int *indices;
 
 int width = 640;
 int height = 480;
@@ -122,7 +126,9 @@ void draw_ocean() {
     al_use_transform(&t);
 
     // Draw
-    int n = al_draw_prim(vertices, NULL, NULL, 0, 3, ALLEGRO_PRIM_TRIANGLE_LIST);
+    // int n = al_draw_prim(vertices, NULL, NULL, 0, 3, ALLEGRO_PRIM_TRIANGLE_LIST);
+    int num_vtx = (GRID_WIDTH - 1) * (GRID_HEIGHT - 1) * 6;
+    int n = al_draw_indexed_prim(vertices, NULL, NULL, indices, num_vtx, ALLEGRO_PRIM_TRIANGLE_LIST);
     // printf("Drew %d tris\n", n);
 
     // Vec3 print_vector = camera.zaxis;
@@ -144,20 +150,32 @@ int main() {
     init_camera(&camera);
 
     // Manually created triangle, replace with some automatic stuff
-    vertices = malloc(sizeof(ALLEGRO_VERTEX) * 3);
-    vertices[0].x = -1;
-    vertices[0].y = -1;
-    vertices[0].z = -4;
-    vertices[0].color = al_map_rgb(0, 0, 255);
-    vertices[1].x = 1;
-    vertices[1].y = -1;
-    vertices[1].z = -4;
-    vertices[1].color = al_map_rgb(0, 0, 255);
-    vertices[2].x = 0;
-    vertices[2].y = 1;
-    vertices[2].z = -4;
-    vertices[2].color = al_map_rgb(0, 0, 255);
+    vertices = malloc(sizeof(ALLEGRO_VERTEX) * GRID_WIDTH * GRID_HEIGHT);
+    for (int y = 0; y < GRID_HEIGHT; y++) {
+        for (int x = 0; x < GRID_WIDTH; x++) {
+            ALLEGRO_VERTEX vertex = vertices[y * GRID_WIDTH + x];
+            vertex.x = x;
+            vertex.y = -1;
+            vertex.z = -y;
+            vertex.color = al_map_rgb(0, 0, 255);
+        }
+    }
     // Try varying colors between vertices
+
+    indices = malloc(sizeof(int) * (GRID_WIDTH - 1) * (GRID_HEIGHT - 1) * 6);
+    for (int y = 0; y < GRID_HEIGHT - 1; y++) {
+        for (int x = 0; x < GRID_WIDTH - 1; x++) {
+            int ibase = y * (GRID_WIDTH - 1) * 6 + x * 6;
+            int vbase = y * GRID_WIDTH + x;
+            indices[ibase + 0] = vbase;
+            indices[ibase + 1] = vbase + 1;
+            indices[ibase + 2] = vbase + GRID_WIDTH;
+            indices[ibase + 3] = vbase + 1;
+            indices[ibase + 4] = vbase + GRID_WIDTH + 1;
+            indices[ibase + 5] = vbase + GRID_WIDTH;
+            // printf("%d, %d\n", ibase + 5, (GRID_WIDTH - 1) * (GRID_HEIGHT - 1) * 6);
+        }
+    }
 
     al_set_new_display_option(ALLEGRO_SAMPLE_BUFFERS, 1, ALLEGRO_SUGGEST);
     al_set_new_display_option(ALLEGRO_SAMPLES, 8, ALLEGRO_SUGGEST); // Try playing with this
